@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>생태환경 퀴즈</title>
+<style>
+  :root{
+    --bg:#0f1724;
+    --card:#0b1220;
+    --accent:#4ee1a0;
+    --accent-2:#6fb8ff;
+    --glass: rgba(255,255,255,0.04);
+    --muted: #9aa6b2;
+    --radius:14px;
+    font-family: "Inter", "Noto Sans KR", system-ui, -apple-system, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#071021 0%, var(--bg) 100%);color:#e6f0f2}
+  .wrap{max-width:940px;margin:28px auto;padding:20px}
+  header{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+  header .logo{
+    width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    display:flex;align-items:center;justify-content:center;font-weight:700;color:#052226;font-size:20px;box-shadow:0 6px 28px rgba(50,160,140,0.14);
+  }
+  header h1{margin:0;font-size:20px}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));backdrop-filter: blur(6px); border-radius:var(--radius); padding:18px;box-shadow: 0 8px 30px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+  .meta{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:13px;margin-bottom:12px}
+  .progressWrap{flex:1;background:rgba(255,255,255,0.03);height:10px;border-radius:999px;overflow:hidden}
+  .progressBar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:0%}
+  .scoreChip{background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:12px;color:var(--muted);font-weight:600}
+
+  .quizArea{display:grid;grid-template-columns:1fr 320px;gap:18px;margin-top:8px}
+  @media (max-width:880px){ .quizArea{grid-template-columns:1fr} .aside{order:2} }
+
+  .questionBox{padding:18px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.02)}
+  .qnum{font-size:13px;color:var(--muted);margin-bottom:6px}
+  .qtext{font-size:18px;margin:0 0 16px 0;line-height:1.4}
+  .options{display:grid;gap:10px}
+  .opt{
+    background:var(--glass);border:1px solid rgba(255,255,255,0.03);
+    padding:12px;border-radius:10px;cursor:pointer;display:flex;gap:10px;align-items:center;transition:all .18s;
+  }
+  .opt:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,0.45)}
+  .opt .label{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;background:rgba(255,255,255,0.02);color:var(--muted)}
+  .opt .text{flex:1;color:#e9fbf3}
+  .opt.correct{border-color: rgba(78,225,160,0.8);box-shadow:0 6px 20px rgba(78,225,160,0.06);background:linear-gradient(90deg, rgba(78,225,160,0.06), rgba(111,184,255,0.02))}
+  .opt.wrong{border-color: rgba(255,92,92,0.9);box-shadow:0 6px 20px rgba(255,92,92,0.06);background:linear-gradient(90deg, rgba(255,92,92,0.04), rgba(255,255,255,0.01))}
+  .opt.disabled{opacity:0.7;cursor:default;transform:none}
+
+  .aside{padding:16px;border-radius:12px;height:100%;display:flex;flex-direction:column;gap:12px}
+  .timer{font-size:13px;color:var(--muted)}
+  .btnRow{display:flex;gap:8px;flex-wrap:wrap}
+  button.btn{
+    border:0;padding:10px 12px;border-radius:10px;font-weight:700;cursor:pointer;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#052226;
+  }
+  button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+  .explain{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;color:var(--muted);font-size:14px}
+
+  .result{
+    text-align:center;padding:28px;border-radius:12px;margin-top:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)));
+  }
+  .bigScore{font-size:44px;font-weight:800;color:var(--accent-2);margin:6px 0}
+  .smallTxt{color:var(--muted);font-size:14px}
+
+  footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">EQ</div>
+      <div>
+        <h1 style="margin:0">생태환경 퀴즈</h1>
+        <div style="color:var(--muted);font-size:13px;margin-top:4px">모든 연령을 위한 기초 생태환경 상식 — 10문제</div>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="meta">
+        <div class="scoreChip" id="scoreChip">점수: 0 / 10</div>
+        <div class="progressWrap" aria-hidden="true">
+          <div class="progressBar" id="progressBar" style="width:0%"></div>
+        </div>
+        <div class="meta" style="margin-left:auto">
+          <div class="timer" id="qTimer">문제 시간: 00:30</div>
+        </div>
+      </div>
+
+      <div class="quizArea">
+        <div class="questionBox" id="questionBox">
+          <!-- 질문 영역 -->
+          <div class="qnum" id="qNum">문제 1 / 10</div>
+          <h2 class="qtext" id="qText">로딩 중...</h2>
+
+          <div class="options" id="options"></div>
+
+          <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center">
+            <div id="feedback" class="smallTxt" style="min-height:20px"></div>
+            <div style="display:flex;gap:8px">
+              <button class="ghost" id="skipBtn">다음 문제 ▶</button>
+            </div>
+          </div>
+        </div>
+
+        <aside class="aside card" style="min-height:160px">
+          <div class="smallTxt">현재 문제</div>
+          <div style="font-weight:800;font-size:20px" id="asideQ">1</div>
+
+          <div class="smallTxt" style="margin-top:6px">남은 시간 (문제별)</div>
+          <div style="font-size:18px;font-weight:700" id="asideTimer">00:30</div>
+
+          <div style="margin-top:12px" class="btnRow">
+            <button id="startBtn" class="btn">시작하기</button>
+            <button id="restartBtn" class="ghost">다시하기</button>
+            <button id="showAnswersBtn" class="ghost">정답 보기</button>
+          </div>
+
+          <div style="margin-top:12px" class="explain" id="explainBox">선택 후 '다음 문제'를 누르거나 자동으로 넘어갑니다.</div>
+        </aside>
+      </div>
+
+      <div id="resultArea" style="display:none;margin-top:16px" class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="smallTxt">최종 점수</div>
+            <div class="bigScore" id="finalScore">0 / 10</div>
+            <div class="smallTxt" id="finalMsg">결과 메시지</div>
+          </div>
+          <div style="text-align:right">
+            <button id="retryBtn" class="btn">다시 풀기</button>
+            <button id="exportBtn" class="ghost">결과 내보내기</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" id="reviewList"></div>
+      </div>
+
+    </div>
+
+    <footer>Made with ♻️ — 생태환경 상식 향상 프로젝트</footer>
+  </div>
+
+<script>
+/* =====================================================
+   문제 데이터 (10개) — 각 문제: q, choices[4], answer (index), explanation
+   모든 한글로 제공
+   ===================================================== */
+const QUIZ_DATA = [
+  {
+    q: "생태계에서 생산자(Producer)의 역할은 무엇인가?",
+    choices: [
+      "다른 동물을 먹어 에너지를 얻는다",
+      "무기물(태양광)로부터 유기물을 만들고 에너지를 저장한다",
+      "분해자로서 유기물을 분해하여 영양분을 돌려준다",
+      "서식지를 제공하는 비생물적 요소를 뜻한다"
+    ],
+    answer: 1,
+    explanation: "생산자는 주로 식물과 조류처럼 광합성을 통해 무기물과 빛을 이용해 유기물을 만들며, 생태계의 에너지 공급원 역할을 합니다."
+  },
+  {
+    q: "기후변화의 주요 원인으로 가장 널리 인정되는 것은?",
+    choices: [
+      "오존층 파괴로 인한 자외선 증가",
+      "지구 공전 궤도의 변화",
+      "온실가스(예: 이산화탄소)의 증가",
+      "태양 활동의 급격한 증가"
+    ],
+    answer: 2,
+    explanation: "온실가스의 급격한 증가는 지구의 복사수지에 영향을 주어 평균 기온을 상승시키는 주요 원인으로 인정됩니다."
+  },
+  {
+    q: "외래종이 생태계에 미치는 부정적 영향은 무엇인가?",
+    choices: [
+      "토양의 화학적 성분을 항상 개선한다",
+      "토착종과 경쟁하거나 포식하여 생물다양성을 감소시킨다",
+      "기후를 안정화시키는 역할을 한다",
+      "외래종은 항상 무해하고 오히려 유익하다"
+    ],
+    answer: 1,
+    explanation: "일부 외래종은 토착종과 자원과 공간을 놓고 경쟁하거나 직접 포식하여 지역 생물다양성을 줄이곤 합니다."
+  },
+  {
+    q: "생태계 서비스(Ecosystem services)에 해당하지 않는 것은?",
+    choices: [
+      "수질 정화와 탄소 저장",
+      "농작물의 수분 매개(수분자 제공)",
+      "바이러스 전파의 촉진",
+      "경관을 통한 휴양·관광 가치"
+    ],
+    answer: 2,
+    explanation: "생태계 서비스는 인간에게 이익이 되는 기능으로, '바이러스 전파의 촉진'은 서비스가 아니라 부정적 영향입니다."
+  },
+  {
+    q: "비점오염(Non-point source pollution)의 예로 알맞은 것은?",
+    choices: [
+      "공장 굴뚝에서 나오는 연기",
+      "하천으로 흐르는 농경지의 비료 유출",
+      "하수 처리장 배출수의 특정 배출구",
+      "정유공장의 기름 누출"
+    ],
+    answer: 1,
+    explanation: "비점오염은 특정한 배출구가 아닌 넓은 지역에서 발생하는 오염으로, 농지에서 장마철에 씻겨 내려오는 비료나 농약 등이 대표적입니다."
+  },
+  {
+    q: "멸종 위기종 보호의 직접적 이유로 옳지 않은 것은?",
+    choices: [
+      "생물다양성 유지",
+      "생태계 기능 보전",
+      "종 단위의 보호는 항상 인간 경제에 즉각적 이득을 준다",
+      "미래 세대를 위한 자연 유산 보전"
+    ],
+    answer: 2,
+    explanation: "멸종종 보호는 중요하지만, '항상 인간 경제에 즉각적 이득'을 준다는 주장은 과장된 일반화입니다."
+  },
+  {
+    q: "습지(wetland)가 환경에 주는 중요한 역할은?",
+    choices: [
+      "탄소를 저장하고 홍수 완화·서식지 제공",
+      "항상 가공 가능한 광물자원을 풍부하게 제공",
+      "도시 교통의 핵심 역할을 한다",
+      "토양의 산성을 극대화한다"
+    ],
+    answer: 0,
+    explanation: "습지는 탄소 저장, 오염물질 여과, 홍수 완화, 생물 서식지 제공 등 중요한 생태계 서비스를 제공합니다."
+  },
+  {
+    q: "생물다양성(Biodiversity)이 높은 생태계의 장점은?",
+    choices: [
+      "환경 변화에 대한 저항력과 복원력이 높다",
+      "항상 생산성이 낮다",
+      "질병에 더 취약하다",
+      "외래종에 쉽게 밀린다"
+    ],
+    answer: 0,
+    explanation: "다양한 종이 존재하면 기능이 분산되어 환경 변화나 스트레스에 대한 저항력과 회복력이 증가합니다."
+  },
+  {
+    q: "지속가능한 자원 이용(Sustainable use)의 핵심 개념은?",
+    choices: [
+      "현재 세대만의 최대 이익을 우선한다",
+      "자원의 영구적 고갈을 피하고 장기적 이용을 보장한다",
+      "자원 사용을 완전히 금지한다",
+      "자원의 이용은 규제 없이 자유방임이 최선이다"
+    ],
+    answer: 1,
+    explanation: "지속가능성은 자원을 미래 세대도 이용할 수 있도록 관리하고 과다한 소비를 피하는 것을 목표로 합니다."
+  },
+  {
+    q: "탄소 발자국(Carbon footprint)을 줄이는 행동으로 가장 알맞지 않은 것은?",
+    choices: [
+      "대중교통이나 자전거 이용 늘리기",
+      "에너지 효율 높은 제품 사용",
+      "불필요한 장거리 항공여행을 자주 하는 것",
+      "식물 기반 식단 비중을 높이기"
+    ],
+    answer: 2,
+    explanation: "장거리 항공여행을 자주 하는 것은 탄소 배출을 크게 늘리므로 탄소발자국을 줄이는 행동으로는 부적절합니다."
+  }
+];
+
+/* =====================================================
+   상태 변수
+   ===================================================== */
+let current = 0;
+let score = 0;
+let timer = null;
+const TIME_PER_QUESTION = 30; // 초
+let timeLeft = TIME_PER_QUESTION;
+let answered = false;
+
+/* =====================================================
+   DOM 요소
+   ===================================================== */
+const qNumEl = document.getElementById('qNum');
+const qTextEl = document.getElementById('qText');
+const optionsEl = document.getElementById('options');
+const scoreChip = document.getElementById('scoreChip');
+const progressBar = document.getElementById('progressBar');
+const qTimer = document.getElementById('qTimer');
+const asideTimer = document.getElementById('asideTimer');
+const asideQ = document.getElementById('asideQ');
+const feedback = document.getElementById('feedback');
+const explainBox = document.getElementById('explainBox');
+const startBtn = document.getElementById('startBtn');
+const restartBtn = document.getElementById('restartBtn');
+const skipBtn = document.getElementById('skipBtn');
+const showAnswersBtn = document.getElementById('showAnswersBtn');
+const resultArea = document.getElementById('resultArea');
+const finalScore = document.getElementById('finalScore');
+const finalMsg = document.getElementById('finalMsg');
+const reviewList = document.getElementById('reviewList');
+const retryBtn = document.getElementById('retryBtn');
+const exportBtn = document.getElementById('exportBtn');
+const startStateBtn = startBtn;
+
+/* =====================================================
+   유틸리티
+   ===================================================== */
+function pad(n){ return String(n).padStart(2,'0'); }
+function updateProgress(){ 
+  const pct = Math.round((current/QUIZ_DATA.length)*100);
+  progressBar.style.width = pct + '%';
+  scoreChip.textContent = `점수: ${score} / ${QUIZ_DATA.length}`;
+}
+function updateTimerDisplay(){
+  qTimer.textContent = `문제 시간: ${pad(timeLeft)}`;
+  asideTimer.textContent = pad(timeLeft);
+}
+function clearOptions(){
+  optionsEl.innerHTML = '';
+  feedback.textContent = '';
+}
+
+/* =====================================================
+   렌더링 (문제 표시)
+   ===================================================== */
+function renderQuestion(){
+  if(current >= QUIZ_DATA.length){
+    finishQuiz();
+    return;
+  }
+  const item = QUIZ_DATA[current];
+  qNumEl.textContent = `문제 ${current+1} / ${QUIZ_DATA.length}`;
+  qTextEl.textContent = item.q;
+  asideQ.textContent = `${current+1}번`;
+  clearOptions();
+  // render choices
+  item.choices.forEach((c,i)=>{
+    const div = document.createElement('div');
+    div.className = 'opt';
+    div.dataset.index = i;
+    div.innerHTML = `
+      <div class="label">${String.fromCharCode(65+i)}</div>
+      <div class="text">${c}</div>
+    `;
+    div.addEventListener('click', ()=> selectOption(div, i));
+    optionsEl.appendChild(div);
+  });
+  // reset state
+  answered = false;
+  timeLeft = TIME_PER_QUESTION;
+  updateTimerDisplay();
+  updateProgress();
+  explainBox.textContent = "선택지를 클릭하면 정답 여부가 표시됩니다.";
+  startTimer();
+}
+
+/* =====================================================
+   타이머
+   ===================================================== */
+function startTimer(){
+  stopTimer();
+  timer = setInterval(()=>{
+    timeLeft--;
+    updateTimerDisplay();
+    if(timeLeft <= 0){
+      stopTimer();
+      markTimeout();
+    }
+  }, 1000);
+}
+function stopTimer(){
+  if(timer) { clearInterval(timer); timer = null; }
+}
+
+/* =====================================================
+   선택 처리
+   ===================================================== */
+function selectOption(div, idx){
+  if(answered) return;
+  answered = true;
+  stopTimer();
+  const item = QUIZ_DATA[current];
+  const correctIdx = item.answer;
+  // disable all
+  Array.from(optionsEl.children).forEach(o => {
+    o.classList.add('disabled');
+    o.style.pointerEvents = 'none';
+  });
+  if(idx === correctIdx){
+    div.classList.add('correct');
+    score++;
+    feedback.textContent = '정답이에요 🎉';
+  } else {
+    div.classList.add('wrong');
+    // highlight correct
+    const correctEl = Array.from(optionsEl.children).find(c => Number(c.dataset.index) === correctIdx);
+    if(correctEl) correctEl.classList.add('correct');
+    feedback.textContent = '아쉬워요 — 정답을 확인해보세요.';
+  }
+  explainBox.textContent = item.explanation || '';
+  updateProgress();
+}
+
+/* =====================================================
+   타임아웃 처리
+   ===================================================== */
+function markTimeout(){
+  if(answered) return;
+  answered = true;
+  // mark correct
+  const item = QUIZ_DATA[current];
+  const correctIdx = item.answer;
+  Array.from(optionsEl.children).forEach(o => {
+    o.classList.add('disabled');
+    o.style.pointerEvents = 'none';
+  });
+  const correctEl = Array.from(optionsEl.children).find(c => Number(c.dataset.index) === correctIdx);
+  if(correctEl) correctEl.classList.add('correct');
+  feedback.textContent = '시간 초과! 자동으로 정답을 표시합니다.';
+  explainBox.textContent = item.explanation || '';
+  updateProgress();
+}
+
+/* =====================================================
+   다음 문제 / 스킵 / 정답보기 / 시작 / 재시작
+   ===================================================== */
+function nextQuestion(){
+  stopTimer();
+  current++;
+  if(current < QUIZ_DATA.length){
+    renderQuestion();
+  } else {
+    finishQuiz();
+  }
+}
+
+skipBtn.addEventListener('click', ()=>{
+  // allow skip even if not answered: count as wrong and move on
+  if(!answered){
+    markTimeout(); // show correct
+    // wait a short moment then next
+    setTimeout(()=> { nextQuestion(); }, 900);
+  } else {
+    nextQuestion();
+  }
+});
+
+showAnswersBtn.addEventListener('click', ()=>{
+  // show all corrects for current
+  const item = QUIZ_DATA[current];
+  Array.from(optionsEl.children).forEach(o => {
+    o.classList.add('disabled');
+    o.style.pointerEvents = 'none';
+  });
+  const correctIdx = item.answer;
+  const correctEl = Array.from(optionsEl.children).find(c => Number(c.dataset.index) === correctIdx);
+  if(correctEl) correctEl.classList.add('correct');
+  feedback.textContent = '정답이 강조되었습니다.';
+  explainBox.textContent = item.explanation || '';
+  answered = true;
+  stopTimer();
+});
+
+startBtn.addEventListener('click', ()=> {
+  // reset and start
+  current = 0; score = 0;
+  resultArea.style.display = 'none';
+  renderQuestion();
+  updateProgress();
+  startBtn.disabled = true;
+  startBtn.textContent = '진행 중...';
+});
+
+restartBtn.addEventListener('click', ()=> {
+  if(confirm('퀴즈를 처음부터 다시 시작할까요? 현재 진행 중인 내용은 초기화됩니다.')){
+    current = 0; score = 0;
+    resultArea.style.display = 'none';
+    renderQuestion();
+    updateProgress();
+    startBtn.disabled = true;
+    startBtn.textContent = '진행 중...';
+  }
+});
+
+/* =====================================================
+   완료 처리 및 리뷰
+   ===================================================== */
+function finishQuiz(){
+  stopTimer();
+  qNumEl.textContent = `완료`;
+  qTextEl.textContent = `모든 문제를 풀었습니다. 결과를 확인하세요.`;
+  optionsEl.innerHTML = '';
+  feedback.textContent = '';
+  explainBox.textContent = '';
+  updateProgress();
+  // show result area
+  resultArea.style.display = 'block';
+  finalScore.textContent = `${score} / ${QUIZ_DATA.length}`;
+  let pct = Math.round((score/QUIZ_DATA.length)*100);
+  let msg = '';
+  if(pct === 100) msg = '훌륭해요! 생태환경 상식을 완벽히 알고 있군요 🏅';
+  else if(pct >= 80) msg = '아주 좋아요! 대부분의 지식을 갖추고 있어요 👍';
+  else if(pct >= 50) msg = '괜찮아요. 좀 더 공부하면 더 잘할 수 있어요 📚';
+  else msg = '기본 개념을 복습해봐요. 작은 실천이 큰 변화를 만듭니다 🌱';
+  finalMsg.textContent = msg;
+
+  // 리뷰: 각 문제와 정답 표시
+  reviewList.innerHTML = '';
+  QUIZ_DATA.forEach((it, i) => {
+    const div = document.createElement('div');
+    div.style.padding = '10px';
+    div.style.borderTop = '1px solid rgba(255,255,255,0.03)';
+    div.innerHTML = `<div style="font-weight:700">${i+1}. ${it.q}</div>
+                     <div style="margin-top:6px;color:var(--muted)">${it.choices.map((c, idx)=> {
+                       const mark = idx === it.answer ? '✔' : '&nbsp;&nbsp;';
+                       return `<div style="margin:2px 0">${mark} <strong>${String.fromCharCode(65+idx)}.</strong> ${c}</div>`;
+                     }).join('')}</div>
+                     <div style="margin-top:8px;color:var(--muted)"><em>해설:</em> ${it.explanation}</div>`;
+    reviewList.appendChild(div);
+  });
+
+  // allow restart
+  startBtn.disabled = false;
+  startBtn.textContent = '시작하기';
+}
+
+/* =====================================================
+   결과 내보내기(간단 JSON)
+   ===================================================== */
+exportBtn.addEventListener('click', ()=>{
+  const payload = {
+    date: new Date().toISOString(),
+    score,
+    total: QUIZ_DATA.length
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ecology-quiz-result-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+/* =====================================================
+   페이지 로드 시 기본 상태
+   ===================================================== */
+(function init(){
+  // show first question in neutral state but timer not started until Start
+  current = 0; score = 0;
+  qNumEl.textContent = `준비`;
+  qTextEl.textContent = `시작하기 버튼을 눌러 퀴즈를 시작하세요.`;
+  optionsEl.innerHTML = '';
+  updateProgress();
+  updateTimerDisplay();
+})();
+</script>
+</body>
+</html>
